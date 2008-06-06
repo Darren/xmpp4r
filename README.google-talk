@@ -6,6 +6,7 @@ tutorials liked from there.
 
 The solution is to use an SSL connection:
 cl = Client::new(myJID)
-cl.connect("talk.l.google.com", 5223, true) # use port 5223 and SSL mode
+cl.use_ssl = true
+cl.connect
 cl.auth(myPassword)
 cl.send(Presence::new)

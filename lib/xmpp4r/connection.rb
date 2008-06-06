@@ -33,6 +33,10 @@ module Jabber
     # Optional callback for verification of SSL peer
     attr_accessor :ssl_verifycb
 
+    #whether to use the old and deprecated SSL protocol
+    #Defaults to false
+    attr_accessor :use_ssl
+
     ##
     # Create a new connection to the given host and port, using threaded mode
     # or not.
@@ -46,6 +50,7 @@ module Jabber
       @ssl_verifycb = nil
       @features_timeout = 10
       @keepalive_interval = 60
+      @use_ssl = false
     end
 
     ##
@@ -53,7 +58,7 @@ module Jabber
     # start the Jabber parser,
     # invoke to accept_features to wait for TLS,
     # start the keep-alive thread
-    def connect(host, port, use_ssl = false)
+    def connect(host, port)
       @host = host
       @port = port
       # Reset is_tls?, so that it works when reconnecting
@@ -61,15 +66,6 @@ module Jabber
 
       Jabber::debuglog("CONNECTING:\n#{@host}:#{@port}")
       @socket = TCPSocket.new(@host, @port)
-
-      # We want to use the old and deprecated SSL protocol (usually on port 5223)
-      if use_ssl
-        ssl = OpenSSL::SSL::SSLSocket.new(@socket)
-        ssl.connect # start SSL session
-        ssl.sync_close = true
-        Jabber::debuglog("SSL connection established.")
-        @socket = ssl
-      end
 
       start
 
@@ -147,7 +143,12 @@ module Jabber
         ctx.verify_callback = @ssl_verifycb
 
         # SSL connection establishing
-        sslsocket = OpenSSL::SSL::SSLSocket.new(@socket, ctx)
+        if @use_ssl
+          sslsocket = OpenSSL::SSL::SSLSocket.new(@socket)
+        else
+          sslsocket = OpenSSL::SSL::SSLSocket.new(@socket, ctx)
+        end
+
         sslsocket.sync_close = true
         Jabber::debuglog("TLSv1: OpenSSL handshake in progress")
         sslsocket.connect
